@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="answer_bg">#C9FFFFFF</color>
+    <color name="sender_bg">#A6FFFFFF</color>
+    <color name="question_bg">#B31B1E1E</color>
+
+    <color name="sender_name_text_color">#CC000000</color>
+    <color name="question_text_color">#FFFFFF</color>
+    <color name="answer_text_color">#31323A</color>
+    <color name="timer_color">#F35652</color>
+    <color name="timer_secondary_color">#95959580</color>
+
+</resources>

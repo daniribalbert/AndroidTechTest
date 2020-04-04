@@ -1,147 +1,84 @@
-# Buff UP LTD Android Dev. Test
+# Buff SDK
 
-# The Task:
+![](sampleimage.png)
 
-Create an Android Application using our Rest API to show a list of available Streams.
+## How To:
+While implementing the Buff SDK we tried to make sure integrating everything happened as simple as possible.
+That's why you can integrate the Buff SDK in a few steps.
 
-When you tap on the stream you should show a video player that plays the stream video.
+#### Step 1: The BuffView
+Add BuffView into you layout.xml
 
+    <com.buffup.views.BuffView
+        android:id="@+id/buffView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
 
+#### Step 2: Start\Stop.
+In your Activity or Fragment, grab your BuffView and call `start()`.
+Also, make sure you call `stop()` before leaving your activity to avoid any leaks.
 
-## Part A: Android Application
+    lateinit var buffView: BuffView
 
-Create a Host Android Application that has a single activity playing a full screen video with the source:
-
-https://buffup-public.s3.eu-west-2.amazonaws.com/video/toronto+nba+cut+3.mp4
-
-That activity should utilize the custom View provided by the Android Library you will be creating a Part B to display content over it
-
-
-
-## Part B: Android SDK
-
-We now want an SDK that the Android App Uses to display content (Buff's as we call them) over the existing video.
-
-The host Android Application should use the SDK to simply show content over the existing video.
-
-The SDK should expose a view that the host Application is adding over the video frame that displays the Buff content there
-
-### SDK Requirements
-
-The SDK should have the following features
-
-- Expose a view that the host App will add in the UI over the video stream to display the Buffs
-- Handle all the business and UI logic to display the Buffs over the video in the view
-
-### Buff UI
-
-The Buff UI should look like this:
-
-![Buff](Buff.png)
-
-
-
-The UI has 3 sections:
-
-- Top Section that displays the Questions Sender Name and Image
-- Middle section where we see the question and the countdown timer
-- Bottom Section where we see the answers
-
-**The countdown timer should work and at the end if the user hasn't yet voted, the question should automatically hide**
-
-**The number of answers can vary from 2 to 5, your UI should automatically adapt to the number of answers that the API delivers**
-
-**If the user selects an answer, the timer should stop and you should hide the Buff after 2 seconds**
-
-***The UI for this screen with the downloadable assets can be found here:***
-
-https://xd.adobe.com/view/763a1597-da0c-4b42-6fb9-73d5666aef52-000b/
-
-### A sample video of the Buffs showing on the current iOS version can be seen here:
-
-https://github.com/buffup/AndroidTechTest/blob/master/Buff.mov?raw=true
-
-## What we are looking for:
-
-- An android application written in Kotlin and an accompanying SDK writen in Kotlin 
-- Demonstration of coding style and design patterns.
-- Knowledge of common android libraries and any others that you find useful.
-- Error handling.
-- Any form of unit or integration testing you see fit.
-- The application must run on Android 5.0 and above.
-- The application must compile and run in Android Studio.
-
-## How to Submit your solution:
-
-- Clone this repository
-- Create a public repo in github, bitbucket or a suitable alternative and provide a link to the repository.
-- Provide a readme in markdown which details your code and any libraries that you may have used.
-
-## API Usage
-
-This a brief summary of the api endpoints you will need in order to create the App and the SDK. There a lot of other additional properties from the json responses that are not relevant, but you must use these endpoints to retrieve the information needed for this task.
-
-#### Base URL
-
-The base URL for the staging environment is `https://buffup.proxy.beeceptor.com`. 
-
-#### Get  Buff
-
-Gets the data for the Buff to show
-
-```
-GET /buffs/:buffId
-
-Buff Id is the id of the buff to fetch
-In the sample Rest API Buffs with Id's 1 to 5 are available
-```
-
-Sample response:
-
-```
-{
-    "result": {
-        "id": 155,
-        "client_id": 1,
-        "stream_id": 1,
-        "time_to_show": 10,
-        "priority": 3,
-        "created_at": "2020-01-31T22:19:43.180391Z",
-        "author": {
-            "first_name": "Pedro",
-            "last_name": "Luz"
-        },
-        "question": {
-            "id": 155,
-            "title": "Ball Circle Personal Loan Account impactful",
-            "category": 1
-        },
-        "answers": [
-            {
-                "id": 387,
-                "buff_id": 0,
-                "title": "324324"
-            },
-            {
-                "id": 388,
-                "buff_id": 0,
-                "title": "wqewqewq"
-            }
-        ],
-        "language": "en"
+    override fun onStart() {
+        super.onStart()
+        buffView.start()
     }
-}
-```
 
-Using the above URL's to fetch the various Buffs, request the Buffs every 30 seconds (from 1 to 5) and display them over the video stream.
+    override fun onStop() {
+        super.onStop()
+        buffView.stop()
+    }
 
-The Buff should be displayed with a countdown timer matching the time in the `time_to_show` field of each Buff.
-If the user votes before the end of the timer (taps on an answer), you should freeze the timer and hide the Buff after 2 seconds.
+#### Step 3: (Optional) Add Listener to receive useful events
+Implement `BuffView.Listener` and pass it to your BuffView using `buffView.setListener()`.
 
-If the timer expires and the user doesn't vote, you should hide the Buff.
+    interface Listener {
+        fun onErrorLoadingBuff(error: BuffError)
+        fun onBuffEvent(event: BuffEvent)
+    }
 
-If the user manually closes the Buff by tapping on the top right `x` close button, you should hide the Buff.
+BuffEvents are:
+
+    enum class BuffEvent {
+        ON_TIMER_EXPIRED,
+        ON_ANSWER_SELECTED,
+        ON_USER_CLOSED_QUESTION,
+        ON_QUESTION_LOADED
+    }
+
+Awesome, you're done! You can also check the sample app VideoApp for a quick demo.
+
+# Sample App - VideoApp
+The Sample App is a small application which shows the usage of the Buff SDK.
+It plays a video and when the video starts it will start showing Buff question. When the app stops it will stop Buff.
+
+The app takes advantage of the MVVM architecture to load a Video URL into a `LiveData` object which can be observed in the `VideoActivity`.
+`VideoActivity` will have an instance of `VideoPlayerViewModel` which holds a reference to that `LiveData`, when the data is available it will automatically start playing the video.
+
+## About the SDK.
+The Buff SDK consists of a multiple custom views which are combined to create the main BuffView.
+It consists of a "HeaderView" which holds the Author/Sender information. A "QuestionView" which holds the Buff Question and Timer. And, the list of answers.
+
+The main BuffView will use its Presenter `BuffViewPresenter` to loa dBuffs from the backend API. But how that works?
+`BuffViewPresenter` will combine our favorite HTTP client (That's `Retrofit`, of course) with Kotlin's Coroutines, which people like to call "Lightweight Threads", to make an API call to Buffs API (All this happening in background at light speed!).
+When we receive the response, we'll parse it with the help of `Gson` and get an pretty object that is sent back to our presenter and redirected to the BuffView which is responsible to update the UI. In case anything bad happens along the way, we can catch possible errors and handle accordingly.
+
+Also, we want to make sure our clients can help us improve and get the most out of Buff. That's why some of Buff events are sent back to the client app, I'm sure the analytics team will love it!
 
 
+## 3rd Party Libraries
 
-**Good luck!**
+- Retrofit - https://square.github.io/retrofit/
+Your favorite HTTP client for Android is also used with Buff SDK.
+
+- Gson - https://github.com/google/gson
+Google's JSON parser library.
+
+- Glide - https://bumptech.github.io/glide/
+See that circular images loading faster than lightning? That's Glide. That's why we use Glide.
+
+- Timber - https://github.com/JakeWharton/timber
+Have you ever had the impression that Android Log class is just a bit too limited? We do, that's where Timber comes to the rescue.
+
+##### Thank you for checking this out and I hope you have enjoyed the reading :)
