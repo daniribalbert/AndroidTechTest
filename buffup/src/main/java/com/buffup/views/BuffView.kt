@@ -16,6 +16,7 @@ import com.buffup.model.BuffEvent
 import kotlinx.android.synthetic.main.buff_layout.view.*
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class BuffView : FrameLayout, TimerView.Listener, BuffViewPresenter.Listener {
 
@@ -35,6 +36,8 @@ open class BuffView : FrameLayout, TimerView.Listener, BuffViewPresenter.Listene
     private val closeAnimationRunnable by lazy { Runnable { startCloseAnimation() } }
 
     internal open val presenter by lazy { BuffViewPresenter(BuffRepository(), this) }
+
+    private var isStopping = AtomicBoolean(false)
 
     constructor(context: Context) : super(context) {
         init()
@@ -78,6 +81,7 @@ open class BuffView : FrameLayout, TimerView.Listener, BuffViewPresenter.Listene
      * Buff is loaded after 30 seconds.
      */
     fun start() {
+        isStopping.set(false)
         Timber.d("Buff is starting...")
 
         startLoadingBuffs()
@@ -88,11 +92,14 @@ open class BuffView : FrameLayout, TimerView.Listener, BuffViewPresenter.Listene
      * Remember to call this on on your Fragment/Activity OnStop/OnPause.
      */
     fun stop() {
-        Timber.d("Buff is stopping...")
-        buffMainContent.visibility = View.GONE
-        questionLayoutContainer.stopTimer()
-        removeCallbacks(loadBuffRunnable)
-        removeCallbacks(closeAnimationRunnable)
+        if (!isStopping.getAndSet(true)) {
+            Timber.d("Buff is stopping...")
+            presenter.stop()
+            buffMainContent.visibility = View.GONE
+            questionLayoutContainer.stopTimer()
+            removeCallbacks(loadBuffRunnable)
+            removeCallbacks(closeAnimationRunnable)
+        }
     }
 
     /**
@@ -174,7 +181,10 @@ open class BuffView : FrameLayout, TimerView.Listener, BuffViewPresenter.Listene
         // Stop Buff loading to avoid possible memory leak when view is detached/no longer used.
         // Also important in case client app forgets to call stop().
         try {
-            stop()
+            if (!isStopping.get()) {
+                Timber.w("Did you forgot to call BuffView.stop()?")
+                stop()
+            }
         } catch (e: Exception) { /* Do Nothing */
         }
         super.onDetachedFromWindow()
